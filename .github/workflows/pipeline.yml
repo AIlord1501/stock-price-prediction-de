@@ -1,0 +1,41 @@
+name: Daily Stock ML Pipeline
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # runs every day at 2:00 UTC
+  workflow_dispatch:       # allows manual trigger
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run ingestion
+        run: python ingetion.py --ticker AAPL
+
+      - name: Run transformation
+        run: python transform.py --ticker AAPL
+
+      - name: Train + evaluate model
+        run: python train.py --ticker AAPL
+
+      - name: Save artifacts (plots, data, logs)
+        uses: actions/upload-artifact@v3
+        with:
+          name: ml-artifacts
+          path: |
+            data/clean/
+            data/raw/
