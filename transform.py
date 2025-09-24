@@ -1,37 +1,33 @@
 import pandas as pd
-from pathlib import Path
+import pathlib
 import argparse
 
+RAW_DIR = pathlib.Path("data/raw")
+CLEAN_DIR = pathlib.Path("data/clean")
 
-RAW_DIR = Path("data/raw")
-CLEAN_DIR = Path("data/clean")
 
 def transform(ticker:str):
-    raw_path = RAW_DIR / f"{ticker}.csv"
-    if not raw_path.exists():
-        print("raw file not found")
+    rawpath  = RAW_DIR / f"{ticker}.csv"
+    if not rawpath.exists():
+        print(" didnt find the file")
         return
+    df = pd.read_csv(rawpath,parse_dates=["dates"])
     
-    df = pd.read_csv(raw_path,parse_dates=["dates"])
+    """ some transformations to the data"""
     df.columns = [c.lower() for c in df.columns]
-    
     df = df.ffill().dropna()
 
-    df["close_lag1"] = df["close"].shift(1)
+    df["return"] = df["close"].pct_change()
+    df["target"] = df["return"].shift(-1)
 
-    # 5-day moving average
-    df["close_ma5"] = df["close"].rolling(window=5).mean()
-
-    # 10-day moving average
-    df["close_ma10"] = df["close"].rolling(window=10).mean()
-    
-    df = df.dropna()
+    df["lag1"] = df["return"].shift(1)
+    df["lag5"] = df["return"].rolling(5).mean()
+    df["vol"] = df["return"].rolling(5).std()
 
     CLEAN_DIR.mkdir(parents=True,exist_ok=True)
     out_path = CLEAN_DIR / f"{ticker}.parquet"
-    df.to_parquet(out_path,engine="pyarrow",index=False)
 
-    print(f"Transformed")
+    print(f"transformed")
 
 if __name__ =="__main__":
     parser = argparse.ArgumentParser()
@@ -39,7 +35,3 @@ if __name__ =="__main__":
     args = parser.parse_args()
 
     transform(args.ticker)
-    
-    
-
-
