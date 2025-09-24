@@ -25,7 +25,7 @@ def transform(ticker:str):
     df["vol"] = df["return"].rolling(5).std()
 
     CLEAN_DIR.mkdir(parents=True,exist_ok=True)
-    out_path = CLEAN_DIR / f"{ticker}.parquet"
+    out_path = CLEAN_DIR / f"{ticker}.csv"
 
     print(f"transformed")
 
